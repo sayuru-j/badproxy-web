@@ -66,7 +66,7 @@ interface AuthInfoResponse {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://20.40.65.70:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://20.6.92.66:8000'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
