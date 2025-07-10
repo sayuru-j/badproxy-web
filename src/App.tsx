@@ -9,6 +9,10 @@ import { Config } from "./pages/Config";
 import { useAuth } from "./contexts/AuthContext";
 import { AuthStatusDashboard } from "./components/AuthStatusDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { UserManagement } from "./pages/UserManagement";
+import { ChangePassword } from "./pages/ChangePassword";
+import { AccountSettings } from "./pages/AccountSettings";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Mobile Loading Component
 const MobileLoader = () => (
@@ -129,9 +133,25 @@ const AppRoutes = () => {
 
         {/* Authentication Status Dashboard */}
         <Route path="auth-status" element={<AuthStatusDashboard />} />
+
+        {/* User Management - Admin only */}
+        <Route
+          path="user-management"
+          element={
+            <ProtectedRoute adminOnly>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Change Password */}
+        <Route path="change-password" element={<ChangePassword />} />
+
+        {/* Account Settings */}
+        <Route path="account-settings" element={<AccountSettings />} />
       </Route>
 
-      {/* Catch-all route with mobile-friendly redirect */}
+      {/* Catch-all route */}
       <Route
         path="*"
         element={
@@ -165,22 +185,23 @@ const AppRoutes = () => {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <MobileErrorBoundary>
-          {/* Mobile-optimized app container */}
-          <div className="min-h-screen bg-black text-white antialiased">
-            {/* Mobile viewport meta optimization */}
-            <div className="min-h-screen flex flex-col">
-              {/* Mobile-safe routing */}
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <AppRoutes />
-              </div>
+      <ThemeProvider>
+        <AuthProvider>
+          <MobileErrorBoundary>
+            {/* Mobile-optimized app container */}
+            <div className="min-h-screen bg-black text-white antialiased">
+              {/* Mobile viewport meta optimization */}
+              <div className="min-h-screen flex flex-col">
+                {/* Mobile-safe routing */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <AppRoutes />
+                </div>
 
-              {/* Mobile-specific footer - Hidden by default, can be enabled */}
-              <div className="sm:hidden">
-                {/* Optional mobile footer for additional navigation */}
-                {/* Uncomment if you want a mobile bottom navigation */}
-                {/*
+                {/* Mobile-specific footer - Hidden by default, can be enabled */}
+                <div className="sm:hidden">
+                  {/* Optional mobile footer for additional navigation */}
+                  {/* Uncomment if you want a mobile bottom navigation */}
+                  {/*
                 <div className="bg-gray-900 border-t border-gray-700 px-4 py-2">
                   <div className="flex justify-center items-center space-x-4">
                     <div className="text-xs text-gray-400 text-center">
@@ -189,11 +210,12 @@ function App() {
                   </div>
                 </div>
                 */}
+                </div>
               </div>
             </div>
-          </div>
-        </MobileErrorBoundary>
-      </AuthProvider>
+          </MobileErrorBoundary>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

@@ -4,7 +4,7 @@ import { EnhancedHeader } from "./Header";
 
 export const Layout = () => {
   return (
-    <div className="flex h-screen bg-black">
+    <div className="flex h-screen bg-black dark:bg-black light:bg-gray-50 transition-colors duration-200">
       {/* Sidebar - Only visible on desktop, mobile uses overlay */}
       <Sidebar />
 
@@ -17,7 +17,7 @@ export const Layout = () => {
 
         {/* Main Content with proper mobile spacing */}
         <main className="flex-1 overflow-y-auto">
-          {/* Mobile: Add top padding for fixed header */}
+          {/* Mobile: Add top padding for fixed mobile nav header */}
           {/* Desktop: No extra padding needed */}
           <div className="pt-16 lg:pt-0 h-full">
             <Outlet />

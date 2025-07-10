@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Shield,
@@ -8,8 +8,15 @@ import {
   Menu,
   X,
   ChevronRight,
-  Home,
+  Users,
+  LogOut,
+  Settings,
+  Key,
+  UserCog,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
   {
@@ -36,6 +43,13 @@ const navItems = [
     icon: FileText,
     shortLabel: "Config",
   },
+  {
+    to: "/user-management",
+    label: "Users",
+    icon: Users,
+    shortLabel: "Users",
+    adminOnly: true,
+  },
 ];
 
 interface SidebarProps {
@@ -48,29 +62,29 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState("/");
 
+  const { user, logout, isConnected, health } = useAuth();
+  const navigate = useNavigate();
+
   // Track current path for mobile breadcrumb
   useEffect(() => {
     setCurrentPath(window.location.pathname);
-    
-    // Listen for route changes
+
     const handleLocationChange = () => {
       setCurrentPath(window.location.pathname);
-      handleMobileClose(); // Close mobile menu on route change
+      handleMobileClose();
     };
 
-    // Listen for both popstate and pushstate/replacestate
     window.addEventListener("popstate", handleLocationChange);
-    
-    // Override pushState and replaceState to detect programmatic navigation
+
     const originalPushState = window.history.pushState;
     const originalReplaceState = window.history.replaceState;
-    
-    window.history.pushState = function(...args) {
+
+    window.history.pushState = function (...args) {
       originalPushState.apply(window.history, args);
       handleLocationChange();
     };
-    
-    window.history.replaceState = function(...args) {
+
+    window.history.replaceState = function (...args) {
       originalReplaceState.apply(window.history, args);
       handleLocationChange();
     };
@@ -82,20 +96,18 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
     };
   }, []);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
 
-  // Get current page info for mobile
   const getCurrentPageInfo = () => {
     const currentItem =
       navItems.find(
@@ -116,6 +128,20 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
     if (onClose) onClose();
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    handleMobileClose();
+  };
+
   return (
     <>
       {/* Desktop Sidebar - Hidden on mobile */}
@@ -128,23 +154,28 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
 
         {/* Desktop Navigation */}
         <nav className="flex-1 py-4">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                `flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors ${
-                  isActive
-                    ? "bg-gray-800 text-white border-r-2 border-white"
-                    : ""
-                }`
-              }
-            >
-              <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </NavLink>
-          ))}
+          {navItems
+            .filter((item) => !item.adminOnly || user?.is_admin)
+            .map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors ${
+                    isActive
+                      ? "bg-gray-800 text-white border-r-2 border-white"
+                      : ""
+                  }`
+                }
+              >
+                <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+                {item.adminOnly && (
+                  <Shield className="w-3 h-3 ml-auto text-yellow-500" />
+                )}
+              </NavLink>
+            ))}
         </nav>
 
         {/* Desktop Footer */}
@@ -159,7 +190,7 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
       {/* Mobile Navigation Header - Only visible on mobile */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-800 px-4 py-3 z-40">
         <div className="flex items-center justify-between">
-          {/* Mobile Logo & Menu Button */}
+          {/* Left side - Menu button and current page */}
           <div className="flex items-center space-x-3">
             <button
               onClick={handleMobileToggle}
@@ -185,13 +216,26 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
             </div>
           </div>
 
-          {/* Mobile Breadcrumb */}
-          <div className="flex items-center space-x-1 text-sm text-gray-400">
-            <Home className="w-4 h-4 flex-shrink-0" />
-            <ChevronRight className="w-3 h-3 flex-shrink-0" />
-            <span className="text-gray-300 truncate">
-              {getCurrentPageInfo().shortLabel}
-            </span>
+          {/* Right side - Connection status and user avatar */}
+          <div className="flex items-center space-x-2">
+            {/* Connection Status */}
+            {isConnected ? (
+              <Wifi className="w-4 h-4 text-green-500" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-red-500" />
+            )}
+
+            {/* User Avatar - opens mobile menu */}
+            {user && (
+              <button
+                onClick={handleMobileToggle}
+                className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center"
+              >
+                <span className="text-white text-xs font-bold">
+                  {getInitials(user.full_name || user.username)}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -226,48 +270,148 @@ export const Sidebar = ({ onToggle, onClose }: SidebarProps) => {
           </button>
         </div>
 
+        {/* User Info Section - Mobile */}
+        {user && (
+          <div className="p-4 border-b border-gray-800 bg-gray-800/50">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold">
+                  {getInitials(user.full_name || user.username)}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">
+                  {user.full_name}
+                </p>
+                <p className="text-gray-400 text-sm truncate">
+                  @{user.username}
+                </p>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded ${
+                      user.is_admin
+                        ? "bg-yellow-900 text-yellow-300"
+                        : "bg-blue-900 text-blue-300"
+                    }`}
+                  >
+                    {user.is_admin ? "Admin" : "User"}
+                  </span>
+                  <div className="flex items-center space-x-1">
+                    {isConnected ? (
+                      <Wifi className="w-3 h-3 text-green-500" />
+                    ) : (
+                      <WifiOff className="w-3 h-3 text-red-500" />
+                    )}
+                    <span
+                      className={`text-xs ${
+                        isConnected ? "text-green-500" : "text-red-500"
+                      }`}
+                    >
+                      {isConnected ? "Connected" : "Offline"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              onClick={handleMobileClose}
-              className={({ isActive }) =>
-                `flex items-center justify-between px-6 py-4 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 touch-manipulation ${
-                  isActive
-                    ? "bg-gray-800 text-white border-white"
-                    : "border-transparent hover:border-gray-600"
-                }`
-              }
-            >
-              <div className="flex items-center min-w-0 flex-1">
-                <item.icon className="w-5 h-5 mr-4 flex-shrink-0" />
-                <span className="font-medium truncate">{item.label}</span>
+          {navItems
+            .filter((item) => !item.adminOnly || user?.is_admin)
+            .map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                onClick={handleMobileClose}
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-6 py-4 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 touch-manipulation ${
+                    isActive
+                      ? "bg-gray-800 text-white border-white"
+                      : "border-transparent hover:border-gray-600"
+                  }`
+                }
+              >
+                <div className="flex items-center min-w-0 flex-1">
+                  <item.icon className="w-5 h-5 mr-4 flex-shrink-0" />
+                  <span className="font-medium truncate">{item.label}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {item.adminOnly && (
+                    <Shield className="w-3 h-3 text-yellow-500" />
+                  )}
+                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                </div>
+              </NavLink>
+            ))}
+
+          {/* User Actions Section */}
+          {user && (
+            <div className="mt-6 pt-4 border-t border-gray-700">
+              <div className="px-4 pb-2">
+                <p className="text-xs text-gray-400 uppercase tracking-wider">
+                  Account
+                </p>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0 ml-2" />
-            </NavLink>
-          ))}
+
+              <button
+                onClick={() => handleNavigation("/account-settings")}
+                className="flex items-center w-full px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                <Settings className="w-5 h-5 mr-4 flex-shrink-0" />
+                <span className="font-medium">Account Settings</span>
+              </button>
+
+              <button
+                onClick={() => handleNavigation("/change-password")}
+                className="flex items-center w-full px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                <Key className="w-5 h-5 mr-4 flex-shrink-0" />
+                <span className="font-medium">Change Password</span>
+              </button>
+
+              {user.is_admin && (
+                <button
+                  onClick={() => handleNavigation("/user-management")}
+                  className="flex items-center w-full px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                >
+                  <UserCog className="w-5 h-5 mr-4 flex-shrink-0" />
+                  <span className="font-medium">User Management</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  logout();
+                  handleMobileClose();
+                }}
+                className="flex items-center w-full px-6 py-3 text-red-400 hover:bg-gray-800 transition-colors"
+              >
+                <LogOut className="w-5 h-5 mr-4 flex-shrink-0" />
+                <span className="font-medium">Sign Out</span>
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Mobile Menu Footer */}
-        <div className="p-6 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-800">
           <div className="text-xs text-gray-500 space-y-2">
             <div className="flex justify-between items-center">
               <span>Version 1.0.0</span>
               <span>© 2025 BadProxy</span>
             </div>
-            <div className="mt-3 p-3 bg-gray-800 rounded-lg">
-              <p className="text-gray-400 text-xs">
-                💡 Tap outside menu to close
-              </p>
-            </div>
+            {health && (
+              <div className="text-xs text-gray-400">
+                API: v{health.version} •{" "}
+                {new Date(health.timestamp).toLocaleTimeString()}
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-
     </>
   );
 };

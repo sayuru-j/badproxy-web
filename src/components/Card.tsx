@@ -1,60 +1,94 @@
-import React from 'react'
+import React from "react";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface CardProps {
-  children: React.ReactNode
-  title?: string | React.ReactNode
-  className?: string
-  action?: React.ReactNode
-  size?: 'sm' | 'md' | 'lg'
-  noPadding?: boolean
+  children: React.ReactNode;
+  title?: string | React.ReactNode;
+  className?: string;
+  action?: React.ReactNode;
+  size?: "sm" | "md" | "lg";
+  noPadding?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ 
-  children, 
-  title, 
-  className = '', 
+export const Card: React.FC<CardProps> = ({
+  children,
+  title,
+  className = "",
   action,
-  size = 'md',
-  noPadding = false
+  size = "md",
+  noPadding = false,
 }) => {
+  const { effectiveTheme } = useTheme();
+
   const sizeClasses = {
     sm: {
-      container: 'text-sm',
-      header: 'px-3 py-2 sm:px-4 sm:py-3',
-      content: 'p-3 sm:p-4',
-      title: 'text-sm sm:text-base font-medium',
+      container: "text-sm",
+      header: "px-3 py-2 sm:px-4 sm:py-3",
+      content: "p-3 sm:p-4",
+      title: "text-sm sm:text-base font-medium",
     },
     md: {
-      container: 'text-base',
-      header: 'px-4 py-3 sm:px-6 sm:py-4',
-      content: 'p-4 sm:p-6',
-      title: 'text-base sm:text-lg font-semibold',
+      container: "text-base",
+      header: "px-4 py-3 sm:px-6 sm:py-4",
+      content: "p-4 sm:p-6",
+      title: "text-base sm:text-lg font-semibold",
     },
     lg: {
-      container: 'text-base sm:text-lg',
-      header: 'px-4 py-4 sm:px-6 sm:py-5',
-      content: 'p-4 sm:p-6 md:p-8',
-      title: 'text-lg sm:text-xl font-semibold',
-    }
-  }
+      container: "text-base sm:text-lg",
+      header: "px-4 py-4 sm:px-6 sm:py-5",
+      content: "p-4 sm:p-6 md:p-8",
+      title: "text-lg sm:text-xl font-semibold",
+    },
+  };
 
-  const currentSize = sizeClasses[size]
+  const currentSize = sizeClasses[size];
 
   return (
-    <div className={`bg-gray-900 border border-gray-700 rounded-lg ${currentSize.container} ${className}`}>
+    <div
+      className={`
+      ${
+        effectiveTheme === "dark"
+          ? "bg-gray-900 border-gray-700"
+          : "bg-white border-gray-200"
+      }
+      border rounded-lg transition-colors duration-200 ${
+        currentSize.container
+      } ${className}
+    `}
+    >
       {title && (
-        <div className={`${currentSize.header} border-b border-gray-700 flex items-center justify-between`}>
-          {typeof title === 'string' ? (
-            <h3 className={`${currentSize.title} text-white truncate`}>{title}</h3>
+        <div
+          className={`
+          ${currentSize.header} 
+          ${effectiveTheme === "dark" ? "border-gray-700" : "border-gray-200"}
+          border-b flex items-center justify-between
+        `}
+        >
+          {typeof title === "string" ? (
+            <h3
+              className={`
+              ${currentSize.title} 
+              ${effectiveTheme === "dark" ? "text-white" : "text-gray-900"}
+              truncate
+            `}
+            >
+              {title}
+            </h3>
           ) : (
-            <div className={`${currentSize.title} text-white w-full`}>{title}</div>
+            <div
+              className={`
+              ${currentSize.title} 
+              ${effectiveTheme === "dark" ? "text-white" : "text-gray-900"}
+              w-full
+            `}
+            >
+              {title}
+            </div>
           )}
           {action && <div className="flex-shrink-0 ml-3">{action}</div>}
         </div>
       )}
-      <div className={noPadding ? '' : currentSize.content}>
-        {children}
-      </div>
+      <div className={noPadding ? "" : currentSize.content}>{children}</div>
     </div>
-  )
-}
+  );
+};
