@@ -36,12 +36,14 @@ const navItems = [
     label: "System",
     icon: Activity,
     shortLabel: "System",
+    adminOnly: true,
   },
   {
     to: "/config",
     label: "Config",
     icon: FileText,
     shortLabel: "Config",
+    adminOnly: true,
   },
   {
     to: "/user-management",

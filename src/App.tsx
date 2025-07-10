@@ -4,6 +4,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { VMess } from "./pages/VMess";
+import { UserVMess } from "./pages/UserVMess"; // New user-specific VMess component
 import { System } from "./pages/System";
 import { Config } from "./pages/Config";
 import { useAuth } from "./contexts/AuthContext";
@@ -63,7 +64,7 @@ const MobileErrorBoundary = ({ children }: { children: React.ReactNode }) => {
 
 // Auth-aware router component with mobile optimizations
 const AppRoutes = () => {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { isAuthenticated, isLoading, error, user } = useAuth();
 
   // Enhanced loading screen for mobile
   if (isLoading) {
@@ -115,8 +116,11 @@ const AppRoutes = () => {
         {/* Dashboard - Default route */}
         <Route index element={<Dashboard />} />
 
-        {/* VMess Management */}
-        <Route path="vmess" element={<VMess />} />
+        {/* VMess Management - Role-based routing */}
+        <Route
+          path="vmess"
+          element={user?.is_admin ? <VMess /> : <UserVMess />}
+        />
 
         {/* System Management - Admin only */}
         <Route
@@ -128,8 +132,15 @@ const AppRoutes = () => {
           }
         />
 
-        {/* Configuration Management */}
-        <Route path="config" element={<Config />} />
+        {/* Configuration Management - Admin only */}
+        <Route
+          path="config"
+          element={
+            <ProtectedRoute adminOnly>
+              <Config />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Authentication Status Dashboard */}
         <Route path="auth-status" element={<AuthStatusDashboard />} />
